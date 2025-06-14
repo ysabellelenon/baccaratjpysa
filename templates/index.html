@@ -13,11 +13,27 @@
         <div class="modal-content">
             <h2>Welcome to Baccarat Casino</h2>
             <div id="room-selection">
-                <input type="text" id="player-name" placeholder="Enter your name" required>
-                <button id="create-room-btn">Create New Room</button>
-                <div class="or-divider">OR</div>
-                <div class="join-room">
-                    <input type="text" id="room-id" placeholder="Enter Room ID" value="{{ room_id if room_id else '' }}">
+                <div class="section create-room-section">
+                    <h3>Create New Room</h3>
+                    <div class="input-group">
+                        <input type="text" id="create-player-name" placeholder="Enter your name" required>
+                        <span class="validation-message" id="create-name-validation"></span>
+                    </div>
+                    <button id="create-room-btn">Create New Room</button>
+                </div>
+                <div class="section-divider">
+                    <span>OR</span>
+                </div>
+                <div class="section join-room-section">
+                    <h3>Join Existing Room</h3>
+                    <div class="input-group">
+                        <input type="text" id="join-player-name" placeholder="Enter your name" required>
+                        <span class="validation-message" id="join-name-validation"></span>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="room-id" placeholder="Enter Room ID" value="{{ room_id if room_id else '' }}">
+                        <span class="validation-message" id="room-id-validation"></span>
+                    </div>
                     <button id="join-room-btn">Join Room</button>
                 </div>
             </div>
@@ -40,6 +56,15 @@
         <!-- Game Messages -->
         <div class="game-messages">
             <div id="message-box"></div>
+        </div>
+
+        <!-- Timer Display -->
+        <div class="timer-container">
+            <div class="timer-display">
+                <div class="timer-label">BETTING TIME</div>
+                <div id="timer-countdown">20</div>
+                <div class="timer-status">Place Your Bets</div>
+            </div>
         </div>
 
         <!-- Game Controls -->

@@ -13,11 +13,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastBets = null;
     let currentRoomId = null;
     let currentPlayerId = null;
+    let bettingEnabled = true;
+    let timerInterval = null;
+    const BETTING_TIME = 20; // 20 seconds for betting
+    const WARNING_TIME = 5; // Show warning at 5 seconds
 
     // Cache DOM elements
     const loginModal = document.getElementById('login-modal');
     const gameContainer = document.querySelector('.game-container');
-    const playerNameInput = document.getElementById('player-name');
+    const createPlayerNameInput = document.getElementById('create-player-name');
+    const joinPlayerNameInput = document.getElementById('join-player-name');
     const roomIdInput = document.getElementById('room-id');
     const createRoomBtn = document.getElementById('create-room-btn');
     const joinRoomBtn = document.getElementById('join-room-btn');
@@ -30,6 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageBox = document.getElementById('message-box');
     const chips = document.querySelectorAll('.chip');
     const bettingSpots = document.querySelectorAll('.betting-spot');
+    const createNameValidation = document.getElementById('create-name-validation');
+    const joinNameValidation = document.getElementById('join-name-validation');
+    const roomIdValidation = document.getElementById('room-id-validation');
+    const timerDisplay = document.getElementById('timer-countdown');
+    const timerStatus = document.querySelector('.timer-status');
 
     // Socket connection status
     socket.on('connect', () => {
@@ -43,17 +53,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     socket.on('error', (data) => {
         console.error('Socket error:', data);
+        if (data.message.includes('Room not found')) {
+            showValidationError(roomIdInput, 'Room not found', roomIdValidation);
+        } else if (data.message.includes('Room is full')) {
+            showValidationError(roomIdInput, 'Room is full', roomIdValidation);
+        }
         showMessage(data.message);
+    });
+
+    // Validation functions
+    function showValidationError(input, message, validationElement) {
+        input.classList.add('error');
+        validationElement.textContent = message;
+        validationElement.classList.add('show');
+    }
+
+    function clearValidationError(input, validationElement) {
+        input.classList.remove('error');
+        validationElement.classList.remove('show');
+    }
+
+    function validateInput(input, validationElement, message) {
+        const value = input.value.trim();
+        if (!value) {
+            showValidationError(input, message, validationElement);
+            return false;
+        }
+        clearValidationError(input, validationElement);
+        return true;
+    }
+
+    // Add input event listeners for real-time validation
+    createPlayerNameInput.addEventListener('input', () => {
+        validateInput(createPlayerNameInput, createNameValidation, 'Please enter your name');
+    });
+
+    joinPlayerNameInput.addEventListener('input', () => {
+        validateInput(joinPlayerNameInput, joinNameValidation, 'Please enter your name');
+    });
+
+    roomIdInput.addEventListener('input', () => {
+        validateInput(roomIdInput, roomIdValidation, 'Please enter a room ID');
     });
 
     // Create Room
     createRoomBtn.addEventListener('click', async () => {
-        const playerName = playerNameInput.value.trim();
-        if (!playerName) {
-            showMessage('Please enter your name');
+        if (!validateInput(createPlayerNameInput, createNameValidation, 'Please enter your name')) {
             return;
         }
 
+        const playerName = createPlayerNameInput.value.trim();
         try {
             const response = await fetch('/create-room', {
                 method: 'POST'
@@ -69,14 +118,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Join Room
     joinRoomBtn.addEventListener('click', () => {
-        const playerName = playerNameInput.value.trim();
-        const roomId = roomIdInput.value.trim();
+        const nameValid = validateInput(joinPlayerNameInput, joinNameValidation, 'Please enter your name');
+        const roomIdValid = validateInput(roomIdInput, roomIdValidation, 'Please enter a room ID');
         
-        if (!playerName || !roomId) {
-            showMessage('Please enter both name and room ID');
+        if (!nameValid || !roomIdValid) {
             return;
         }
 
+        const playerName = joinPlayerNameInput.value.trim();
+        const roomId = roomIdInput.value.trim();
         console.log('Attempting to join room:', roomId);
         joinRoom(roomId, playerName);
     });
@@ -112,6 +162,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Socket event handlers
     socket.on('player_joined', (data) => {
+        // Clear all validation messages on successful join
+        clearValidationError(createPlayerNameInput, createNameValidation);
+        clearValidationError(joinPlayerNameInput, joinNameValidation);
+        clearValidationError(roomIdInput, roomIdValidation);
+        
         console.log('Player joined event:', data);
         currentRoomId = data.room_id;
         currentPlayerId = data.player_id;
@@ -128,6 +183,9 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePlayerPositions(data.players);
         
         showMessage(`${data.player_name} joined the game`);
+        
+        // Start the first round
+        startNewRound();
     });
 
     socket.on('player_left', (data) => {
@@ -148,12 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('game_result', (data) => {
-        gameInProgress = false;
-        dealButton.disabled = false;
-        
-        // Clear hands
-        document.getElementById('player-hand').innerHTML = '';
-        document.getElementById('banker-hand').innerHTML = '';
+        gameInProgress = true;
         
         // Deal cards with animation
         dealCards(data.player_cards, 'player-hand');
@@ -163,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('player-value').textContent = `Value: ${data.player_value}`;
         document.getElementById('banker-value').textContent = `Value: ${data.banker_value}`;
         
-        // Update player positions with new balances
+        // Update player positions
         updatePlayerPositions(data.players);
         
         // Show winner
@@ -172,6 +225,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset bets
         currentBets = {player: 0, banker: 0, tie: 0};
         updateAllBetDisplays();
+        
+        // Start new round after a delay
+        setTimeout(() => {
+            startNewRound();
+        }, 5000); // 5 second delay between rounds
     });
 
     // Initialize chip selection
@@ -188,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize betting spots
     bettingSpots.forEach(spot => {
         spot.addEventListener('click', () => {
-            if (gameInProgress || !selectedChipValue) return;
+            if (!bettingEnabled || !selectedChipValue) return;
             
             const betType = spot.dataset.type;
             socket.emit('place_bet', {
@@ -217,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Clear button
     clearButton.addEventListener('click', () => {
-        if (gameInProgress) return;
+        if (!bettingEnabled) return;
         
         currentBets = {player: 0, banker: 0, tie: 0};
         updateAllBetDisplays();
@@ -225,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Rebet button
     rebetButton.addEventListener('click', () => {
-        if (gameInProgress || !lastBets) return;
+        if (!bettingEnabled || !lastBets) return;
         
         Object.entries(lastBets).forEach(([type, amount]) => {
             socket.emit('place_bet', {
@@ -333,6 +391,56 @@ document.addEventListener('DOMContentLoaded', () => {
         messageBox.textContent = message;
         messageBox.style.animation = 'fadeInOut 3s ease-in-out';
         setTimeout(() => messageBox.style.animation = '', 3000);
+    }
+
+    function startNewRound() {
+        // Reset game state
+        gameInProgress = false;
+        bettingEnabled = true;
+        
+        // Clear hands
+        document.getElementById('player-hand').innerHTML = '';
+        document.getElementById('banker-hand').innerHTML = '';
+        document.getElementById('player-value').textContent = 'Value: 0';
+        document.getElementById('banker-value').textContent = 'Value: 0';
+        
+        // Start betting timer
+        startBettingTimer();
+    }
+
+    function startBettingTimer() {
+        let timeLeft = BETTING_TIME;
+        timerDisplay.textContent = timeLeft;
+        timerDisplay.classList.remove('warning');
+        timerStatus.textContent = 'Place Your Bets';
+        
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerDisplay.textContent = timeLeft;
+            
+            if (timeLeft <= WARNING_TIME) {
+                timerDisplay.classList.add('warning');
+                timerStatus.textContent = 'Last Call!';
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                endBettingPhase();
+            }
+        }, 1000);
+    }
+
+    function endBettingPhase() {
+        bettingEnabled = false;
+        timerStatus.textContent = 'No More Bets';
+        gameInProgress = true;
+        
+        // Store last bets for rebet feature
+        lastBets = {...currentBets};
+        
+        // Emit deal event regardless of bets
+        socket.emit('deal');
     }
 
     // Check for room ID in URL
