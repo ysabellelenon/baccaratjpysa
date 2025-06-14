@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baccarat Casino</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-messages">
+            <div id="message-box"></div>
+        </div>
+
+        <div class="game-table">
+            <div class="table-felt"></div>
+            
+            <!-- Card Areas -->
+            <div class="card-areas">
+                <div class="player-area">
+                    <h2>Player</h2>
+                    <div class="hand" id="player-hand"></div>
+                    <div class="hand-value" id="player-value">Value: 0</div>
+                </div>
+                <div class="banker-area">
+                    <h2>Banker</h2>
+                    <div class="hand" id="banker-hand"></div>
+                    <div class="hand-value" id="banker-value">Value: 0</div>
+                </div>
+            </div>
+
+            <!-- Player Positions -->
+            <div class="player-positions">
+                <div class="player-position">
+                    <div class="player-avatar">
+                        <span>1</span>
+                    </div>
+                    <div class="player-info">
+                        <div class="player-name">Ronny</div>
+                        <div class="player-balance">$1,250,350</div>
+                    </div>
+                </div>
+                <div class="player-position">
+                    <div class="player-avatar">
+                        <span>2</span>
+                    </div>
+                    <div class="player-info">
+                        <div class="player-name">Emily</div>
+                        <div class="player-balance">$750,652</div>
+                    </div>
+                </div>
+                <div class="player-position">
+                    <div class="player-avatar">
+                        <span>3</span>
+                    </div>
+                    <div class="player-info">
+                        <div class="player-name">Marina</div>
+                        <div class="player-balance">$15,050,000</div>
+                    </div>
+                </div>
+                <div class="player-position">
+                    <div class="player-avatar">
+                        <span>4</span>
+                    </div>
+                    <div class="player-info">
+                        <div class="player-name">Dikky</div>
+                        <div class="player-balance">$12,360,812,930</div>
+                    </div>
+                </div>
+                <div class="player-position">
+                    <div class="player-avatar">
+                        <span>5</span>
+                    </div>
+                    <div class="player-info">
+                        <div class="player-name">Kate</div>
+                        <div class="player-balance">$250,456,520</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Betting Areas -->
+            <div class="betting-areas">
+                <div class="betting-spot player" data-type="player">
+                    <span>PLAYER</span>
+                    <div class="bet-amount" id="player-bet">0</div>
+                </div>
+                <div class="betting-spot tie" data-type="tie">
+                    <span>TIE</span>
+                    <div class="bet-amount" id="tie-bet">0</div>
+                </div>
+                <div class="betting-spot banker" data-type="banker">
+                    <span>BANKER</span>
+                    <div class="bet-amount" id="banker-bet">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Controls -->
+        <div class="game-controls">
+            <button class="control-button" id="deal-button">DEAL</button>
+            <button class="control-button" id="clear-button">CLEAR</button>
+            <button class="control-button" id="rebet-button">REBET</button>
+        </div>
+
+        <!-- Chip Selection -->
+        <div class="chip-rack">
+            <div class="chip" data-value="1">$1</div>
+            <div class="chip" data-value="5">$5</div>
+            <div class="chip" data-value="25">$25</div>
+            <div class="chip" data-value="100">$100</div>
+            <div class="chip" data-value="500">$500</div>
+            <div class="chip" data-value="1000">$1K</div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/game.js') }}"></script>
+</body>
+</html> 
