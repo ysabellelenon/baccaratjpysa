@@ -1,136 +1,226 @@
 from flask import Flask, render_template, jsonify, request, session
+from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_cors import CORS
 import random
-import json
+import uuid
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+CORS(app, resources={r"/*": {"origins": "*"}})
+app.config['SECRET_KEY'] = 'your-secret-key'
+app.config['DEBUG'] = True
+app.config['CORS_HEADERS'] = 'Content-Type'
 
-# Card deck setup
-SUITS = ['hearts', 'diamonds', 'clubs', 'spades']
-RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace']
-DECK = [(rank, suit) for suit in SUITS for rank in RANKS]
+# Initialize Socket.IO with proper configuration
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode='threading',
+    logger=True,
+    engineio_logger=True
+)
 
-def create_deck():
-    deck = DECK.copy()
-    random.shuffle(deck)
-    return deck
+# Game rooms storage
+rooms = {}
 
-def calculate_hand_value(hand):
-    value = 0
-    aces = 0
-    
-    for rank, _ in hand:
-        if rank == 'ace':
-            aces += 1
-        elif rank in ['king', 'queen', 'jack', '10']:
-            value += 0
-        else:
-            value += int(rank)
-    
-    # Add aces
-    for _ in range(aces):
-        if value + 1 <= 9:
-            value += 1
-        else:
-            value += 0
-            
-    return value % 10
+class Room:
+    def __init__(self, room_id):
+        self.id = room_id
+        self.players = {}
+        self.current_bets = {'player': 0, 'banker': 0, 'tie': 0}
+        self.game_in_progress = False
+        self.deck = []
+        self.initialize_deck()
 
-def deal_cards():
-    deck = create_deck()
-    player_hand = [deck.pop() for _ in range(2)]
-    banker_hand = [deck.pop() for _ in range(2)]
-    
-    player_value = calculate_hand_value(player_hand)
-    banker_value = calculate_hand_value(banker_hand)
-    
-    # Third card rules
-    if player_value <= 5:
-        player_hand.append(deck.pop())
-        player_value = calculate_hand_value(player_hand)
+    def initialize_deck(self):
+        suits = ['hearts', 'diamonds', 'clubs', 'spades']
+        values = list(range(1, 14))  # 1-13 (Ace-King)
+        self.deck = [f"{value}_of_{suit}.png" for suit in suits for value in values]
+        random.shuffle(self.deck)
+
+    def add_player(self, player_id, name):
+        if len(self.players) < 5:  # Maximum 5 players per room
+            self.players[player_id] = {
+                'name': name,
+                'balance': 10000,  # Starting balance
+                'position': len(self.players) + 1
+            }
+            return True
+        return False
+
+    def remove_player(self, player_id):
+        if player_id in self.players:
+            del self.players[player_id]
+
+    def deal_cards(self):
+        if len(self.deck) < 4:
+            self.initialize_deck()
         
-        # Banker draws based on player's third card
-        if banker_value <= 2:
-            banker_hand.append(deck.pop())
-        elif banker_value == 3 and player_value != 8:
-            banker_hand.append(deck.pop())
-        elif banker_value == 4 and player_value in [2, 3, 4, 5, 6, 7]:
-            banker_hand.append(deck.pop())
-        elif banker_value == 5 and player_value in [4, 5, 6, 7]:
-            banker_hand.append(deck.pop())
-        elif banker_value == 6 and player_value in [6, 7]:
-            banker_hand.append(deck.pop())
-    elif banker_value <= 5:
-        banker_hand.append(deck.pop())
+        player_cards = [self.deck.pop() for _ in range(2)]
+        banker_cards = [self.deck.pop() for _ in range(2)]
         
-    banker_value = calculate_hand_value(banker_hand)
-    
-    return player_hand, banker_hand, player_value, banker_value
+        return player_cards, banker_cards
 
-def determine_winner(player_value, banker_value):
-    if player_value > banker_value:
-        return 'player'
-    elif banker_value > player_value:
-        return 'banker'
-    else:
-        return 'tie'
-
-def calculate_winnings(bets, winner):
-    winnings = 0
-    if winner == 'player':
-        winnings += bets['player'] * 2  # 1:1 payout
-        winnings -= bets['banker']
-        winnings -= bets['tie']
-    elif winner == 'banker':
-        winnings += int(bets['banker'] * 1.95)  # 0.95:1 payout
-        winnings -= bets['player']
-        winnings -= bets['tie']
-    else:  # tie
-        winnings += bets['tie'] * 9  # 8:1 payout
-        winnings += bets['player']  # Push on player/banker bets
-        winnings += bets['banker']
-    return winnings
+    def calculate_hand_value(self, cards):
+        total = 0
+        for card in cards:
+            value = int(card.split('_')[0])
+            if value > 9:  # Face cards
+                value = 0
+            total += value
+        return total % 10
 
 @app.route('/')
 def index():
-    if 'bankroll' not in session:
-        session['bankroll'] = 1000
-    return render_template('index.html', bankroll=session['bankroll'])
+    return render_template('index.html')
 
-@app.route('/deal', methods=['POST'])
-def play():
-    try:
-        bets = request.json
+@app.route('/create-room', methods=['POST'])
+def create_room():
+    room_id = str(uuid.uuid4())[:8]  # Generate a unique room ID
+    rooms[room_id] = Room(room_id)
+    return jsonify({'room_id': room_id})
+
+@app.route('/join-room/<room_id>')
+def join_room_page(room_id):
+    if room_id not in rooms:
+        return "Room not found", 404
+    return render_template('index.html', room_id=room_id)
+
+@socketio.on('join')
+def on_join(data):
+    room_id = data['room_id']
+    player_name = data['player_name']
+    
+    print(f"Join attempt - Room ID: {room_id}, Player: {player_name}")  # Debug log
+    print(f"Available rooms: {list(rooms.keys())}")  # Debug log
+    
+    if room_id not in rooms:
+        print(f"Room {room_id} not found")  # Debug log
+        emit('error', {'message': 'Room not found'})
+        return
+
+    room = rooms[room_id]
+    player_id = str(uuid.uuid4())
+    
+    if room.add_player(player_id, player_name):
+        join_room(room_id)
+        session['player_id'] = player_id
+        session['room_id'] = room_id
         
-        # Validate bets
-        if not all(isinstance(v, (int, float)) for v in bets.values()):
-            return jsonify({'error': 'Invalid bet amounts'})
+        print(f"Player {player_name} joined room {room_id}")  # Debug log
         
-        # Deal cards
-        player_hand, banker_hand, player_value, banker_value = deal_cards()
+        # Notify all players in the room about the new player
+        emit('player_joined', {
+            'players': room.players,
+            'player_id': player_id,
+            'room_id': room_id,
+            'player_name': player_name
+        }, room=room_id)
+    else:
+        emit('error', {'message': 'Room is full'})
+
+@socketio.on('disconnect')
+def on_disconnect():
+    if 'player_id' in session and 'room_id' in session:
+        room_id = session['room_id']
+        player_id = session['player_id']
         
-        # Determine winner
-        winner = determine_winner(player_value, banker_value)
+        if room_id in rooms:
+            room = rooms[room_id]
+            room.remove_player(player_id)
+            
+            if len(room.players) == 0:
+                del rooms[room_id]
+            else:
+                emit('player_left', {
+                    'players': room.players,
+                    'player_id': player_id
+                }, room=room_id)
+
+@socketio.on('place_bet')
+def on_place_bet(data):
+    room_id = session.get('room_id')
+    player_id = session.get('player_id')
+    
+    if not room_id or not player_id or room_id not in rooms:
+        emit('error', {'message': 'Invalid room or player'})
+        return
+    
+    room = rooms[room_id]
+    player = room.players.get(player_id)
+    
+    if not player:
+        emit('error', {'message': 'Player not found'})
+        return
+    
+    bet_type = data['bet_type']
+    amount = data['amount']
+    
+    if player['balance'] >= amount:
+        player['balance'] -= amount
+        room.current_bets[bet_type] += amount
         
-        # Calculate winnings
-        winnings = calculate_winnings(bets, winner)
+        emit('bet_placed', {
+            'player_id': player_id,
+            'bet_type': bet_type,
+            'amount': amount,
+            'current_bets': room.current_bets,
+            'player_balance': player['balance']
+        }, room=room_id)
+    else:
+        emit('error', {'message': 'Insufficient funds'})
+
+@socketio.on('deal')
+def on_deal():
+    room_id = session.get('room_id')
+    if not room_id or room_id not in rooms:
+        emit('error', {'message': 'Invalid room'})
+        return
+    
+    room = rooms[room_id]
+    if room.game_in_progress:
+        emit('error', {'message': 'Game is already in progress'})
+        return
+    
+    room.game_in_progress = True
+    player_cards, banker_cards = room.deal_cards()
+    
+    player_value = room.calculate_hand_value(player_cards)
+    banker_value = room.calculate_hand_value(banker_cards)
+    
+    # Determine winner
+    winner = None
+    if player_value > banker_value:
+        winner = 'player'
+    elif banker_value > player_value:
+        winner = 'banker'
+    else:
+        winner = 'tie'
+    
+    # Calculate winnings and update player balances
+    for player_id, player in room.players.items():
+        winnings = 0
+        if winner == 'player' and room.current_bets['player'] > 0:
+            winnings = room.current_bets['player'] * 2
+        elif winner == 'banker' and room.current_bets['banker'] > 0:
+            winnings = room.current_bets['banker'] * 1.95  # 5% commission
+        elif winner == 'tie' and room.current_bets['tie'] > 0:
+            winnings = room.current_bets['tie'] * 8
         
-        # Format cards for frontend
-        player_cards = [f"{rank}_of_{suit}.png" for rank, suit in player_hand]
-        banker_cards = [f"{rank}_of_{suit}.png" for rank, suit in banker_hand]
-        
-        return jsonify({
-            'player_cards': player_cards,
-            'banker_cards': banker_cards,
-            'player_value': player_value,
-            'banker_value': banker_value,
-            'winner': winner,
-            'winnings': winnings
-        })
-        
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({'error': 'An error occurred during the game'})
+        player['balance'] += winnings
+    
+    # Reset game state
+    room.current_bets = {'player': 0, 'banker': 0, 'tie': 0}
+    room.game_in_progress = False
+    
+    # Broadcast result to all players in the room
+    emit('game_result', {
+        'player_cards': player_cards,
+        'banker_cards': banker_cards,
+        'player_value': player_value,
+        'banker_value': banker_value,
+        'winner': winner,
+        'players': room.players
+    }, room=room_id)
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    socketio.run(app, host='0.0.0.0', port=5001, debug=True, allow_unsafe_werkzeug=True) 

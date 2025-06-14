@@ -22,16 +22,17 @@ body {
     position: relative;
 }
 
-/* Table Layout */
+/* Game Table */
 .game-table {
     position: relative;
     background: #006994;
     border-radius: 30px;
     padding: 40px;
-    margin: 20px auto;
-    min-height: 600px;
+    margin: 40px auto;
+    min-height: 700px;
     border: 15px solid #2d2416;
     box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
 }
 
 .table-felt {
@@ -42,162 +43,198 @@ body {
     bottom: 0;
     background: url('../images/table-pattern.png') repeat;
     opacity: 0.1;
-    border-radius: 180px 180px 0 0;
-}
-
-/* Card Areas */
-.card-areas {
-    display: flex;
-    justify-content: space-between;
-    padding: 20px 100px;
-    margin-top: 20px;
-}
-
-.player-area, .banker-area {
-    text-align: center;
-}
-
-.player-area h2, .banker-area h2 {
-    color: #ffffff;
-    font-size: 24px;
-    margin-bottom: 15px;
-}
-
-.hand {
-    display: flex;
-    gap: 10px;
-    min-height: 150px;
-    justify-content: center;
-}
-
-.card {
-    width: 100px;
-    height: 140px;
-    background-color: #ffffff;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    position: relative;
-    margin: 0 5px;
-}
-
-.card img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: 5px;
-}
-
-.hand-value {
-    color: #ffd700;
-    font-size: 18px;
-    margin-top: 10px;
-}
-
-/* Betting Areas */
-.betting-areas {
-    position: absolute;
-    bottom: 50px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 20px;
-}
-
-.betting-spot {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    color: white;
-    text-transform: uppercase;
-    font-size: 14px;
-}
-
-.betting-spot.player {
-    background: rgba(0, 100, 148, 0.8);
-    border: 2px solid #2196F3;
-}
-
-.betting-spot.banker {
-    background: rgba(148, 0, 0, 0.8);
-    border: 2px solid #f44336;
-    width: 300px;
-    border-radius: 30px;
-}
-
-.betting-spot.tie {
-    background: rgba(0, 148, 74, 0.8);
-    border: 2px solid #4CAF50;
+    border-radius: 15px;
 }
 
 /* Player Positions */
+.player-positions {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 20px;
+    flex-wrap: wrap;
+}
+
 .player-position {
-    position: absolute;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #ffd700;
+    border-radius: 15px;
+    padding: 15px;
+    width: 180px;
     text-align: center;
-    width: 120px;
+    transition: transform 0.3s ease;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.5s forwards;
+}
+
+.player-position:hover {
+    transform: scale(1.05);
 }
 
 .player-avatar {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: #333;
+    width: 40px;
+    height: 40px;
+    background: #2a2a2a;
     border: 2px solid #ffd700;
-    margin: 0 auto;
-    overflow: hidden;
+    border-radius: 50%;
+    margin: 0 auto 10px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .player-avatar span {
-    color: white;
+    color: #ffd700;
     font-weight: bold;
-}
-
-.player-info {
-    margin-top: 5px;
+    font-size: 18px;
 }
 
 .player-name {
-    color: #ffd700;
-    font-size: 14px;
+    color: #ffffff;
+    font-size: 16px;
+    margin-bottom: 5px;
 }
 
 .player-balance {
     color: #90EE90;
-    font-size: 12px;
+    font-size: 14px;
+    font-weight: bold;
 }
 
-/* Position players around the table */
-.player-position:nth-child(1) { left: 5%; top: 40%; }
-.player-position:nth-child(2) { left: 25%; top: 20%; }
-.player-position:nth-child(3) { left: 45%; top: 10%; }
-.player-position:nth-child(4) { right: 45%; top: 10%; }
-.player-position:nth-child(5) { right: 25%; top: 20%; }
+/* Card Areas */
+.card-areas {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    margin: 40px 0;
+    position: relative;
+}
 
-/* Chip Selection */
+.player-area, .banker-area {
+    flex: 1;
+    max-width: 400px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    margin: 0 20px;
+}
+
+.hand {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    min-height: 200px;
+}
+
+.card {
+    width: 120px;
+    height: 168px; /* Maintain 3:4 aspect ratio */
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+    overflow: hidden;
+}
+
+.card img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.hand-value {
+    margin-top: 15px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 20px;
+    display: inline-block;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Labels */
+.area-label {
+    text-align: center;
+    color: #ffd700;
+    font-size: 24px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.5);
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid #ffd700;
+}
+
+/* Betting Areas */
+.betting-areas {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.betting-spot {
+    padding: 15px 25px;
+    border-radius: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.betting-spot.player {
+    background: rgba(33, 150, 243, 0.8);
+    border: 3px solid #2196F3;
+}
+
+.betting-spot.banker {
+    background: rgba(244, 67, 54, 0.8);
+    border: 3px solid #f44336;
+}
+
+.betting-spot.tie {
+    background: rgba(76, 175, 80, 0.8);
+    border: 3px solid #4CAF50;
+}
+
+.betting-spot span {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.bet-amount {
+    margin-top: 10px;
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+    color: #ffd700;
+    font-weight: bold;
+}
+
+/* Chip Rack */
 .chip-rack {
     position: fixed;
-    bottom: 20px;
+    bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 10px;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.8);
-    border-radius: 30px;
+    gap: 15px;
+    padding: 15px 30px;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 35px;
+    border: 2px solid #ffd700;
+    z-index: 1000;
 }
 
 .chip {
-    width: 50px;
-    height: 50px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -205,57 +242,56 @@ body {
     font-weight: bold;
     cursor: pointer;
     color: white;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    transition: transform 0.2s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    transition: all 0.3s ease;
+    border: 3px solid rgba(255, 255, 255, 0.3);
 }
 
 .chip:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
 }
 
-.chip[data-value="1"] { background: linear-gradient(135deg, #e53935, #c62828); }
-.chip[data-value="5"] { background: linear-gradient(135deg, #1e88e5, #1565c0); }
-.chip[data-value="25"] { background: linear-gradient(135deg, #43a047, #2e7d32); }
-.chip[data-value="100"] { background: linear-gradient(135deg, #8e24aa, #6a1b9a); }
-.chip[data-value="500"] { background: linear-gradient(135deg, #fb8c00, #ef6c00); }
-.chip[data-value="1000"] { background: linear-gradient(135deg, #212121, #000000); }
+.chip.selected {
+    border-color: #ffd700;
+    box-shadow: 0 0 15px #ffd700;
+}
 
 /* Game Controls */
 .game-controls {
     position: fixed;
-    right: 20px;
     top: 20px;
+    right: 20px;
     display: flex;
-    gap: 10px;
+    gap: 15px;
+    z-index: 1000;
 }
 
 .control-button {
-    padding: 8px 16px;
+    padding: 12px 24px;
     border: none;
-    border-radius: 5px;
+    border-radius: 25px;
     background: rgba(0, 0, 0, 0.8);
-    color: white;
+    color: #ffd700;
     cursor: pointer;
     transition: all 0.3s ease;
     text-transform: uppercase;
-    font-size: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    border: 2px solid #ffd700;
 }
 
 .control-button:hover {
-    background: rgba(255, 215, 0, 0.8);
+    background: #ffd700;
+    color: #000000;
 }
 
-/* Bet amounts */
-.bet-amount {
-    position: absolute;
-    bottom: -25px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: #ffd700;
-    font-weight: bold;
+.control-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-/* Game Messages */
+/* Messages */
 .game-messages {
     position: fixed;
     top: 20px;
@@ -265,12 +301,16 @@ body {
 }
 
 #message-box {
-    background-color: rgba(0, 0, 0, 0.8);
-    color: #fff;
-    padding: 15px 30px;
-    border-radius: 30px;
-    font-size: 18px;
+    background: rgba(0, 0, 0, 0.9);
+    color: #ffd700;
+    padding: 15px 40px;
+    border-radius: 25px;
+    font-size: 20px;
+    font-weight: bold;
     text-align: center;
+    border: 2px solid #ffd700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
 /* History Section Styles */
@@ -427,4 +467,239 @@ body {
     background: linear-gradient(45deg, #d4af37, #ffd700);
     clip-path: polygon(48% 0, 52% 0, 52% 100%, 48% 100%);
     border-radius: 10px;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: #1a1a1a;
+    padding: 40px;
+    border-radius: 20px;
+    border: 2px solid #ffd700;
+    text-align: center;
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-content h2 {
+    color: #ffd700;
+    margin-bottom: 30px;
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+#room-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#room-selection input {
+    padding: 12px 20px;
+    border: 2px solid #ffd700;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 25px;
+    color: #ffffff;
+    font-size: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#room-selection input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+#room-selection button {
+    padding: 12px 30px;
+    background: #ffd700;
+    border: none;
+    border-radius: 25px;
+    color: #000000;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#room-selection button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+
+.or-divider {
+    color: #ffffff;
+    font-size: 18px;
+    margin: 10px 0;
+    position: relative;
+}
+
+.or-divider::before,
+.or-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.or-divider::before {
+    left: 0;
+}
+
+.or-divider::after {
+    right: 0;
+}
+
+.join-room {
+    display: flex;
+    gap: 10px;
+}
+
+.join-room input {
+    flex: 1;
+}
+
+/* Room Info */
+.room-info {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px 25px;
+    border-radius: 25px;
+    border: 2px solid #ffd700;
+    color: #ffffff;
+    z-index: 1000;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.room-id-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.room-id-label {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.room-id-value {
+    color: #ffd700;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    padding: 5px 10px;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 8px;
+    min-width: 80px;
+    text-align: center;
+}
+
+.copy-button {
+    background: transparent;
+    border: 1px solid #ffd700;
+    color: #ffd700;
+    padding: 8px 20px;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.copy-button:hover {
+    background: #ffd700;
+    color: #000000;
+}
+
+.copy-button .button-text,
+.copy-button .copy-success-text {
+    transition: all 0.3s ease;
+}
+
+.copy-button .copy-success-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) translateY(100%);
+    opacity: 0;
+}
+
+.copy-button.copied .button-text {
+    transform: translateY(-100%);
+    opacity: 0;
+}
+
+.copy-button.copied .copy-success-text {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+}
+
+/* Player Join/Leave Animations */
+.player-enter {
+    animation: playerEnter 0.5s ease-out forwards;
+}
+
+.player-leave {
+    animation: playerLeave 0.5s ease-in forwards;
+}
+
+@keyframes playerEnter {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes playerLeave {
+    from {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.8) translateY(20px);
+    }
+}
+
+/* Add to existing animations */
+@keyframes copySuccess {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.copy-success {
+    animation: copySuccess 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 } 
